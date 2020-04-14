@@ -13,6 +13,12 @@ import itertools
 import hashlib
 import json
 
+flags = tf.app.flags
+flags.DEFINE_string('data_dir', '', 'Directory to read input tfrecords from.')
+flags.DEFINE_string('output_path', '', 'Path to write the tensorflow dectection api tfrecords to.')
+FLAGS = flags.FLAGS
+
+
 tf.enable_eager_execution()
 
 
@@ -150,13 +156,6 @@ def build_example(sequence_name, camera_image, camera_labels, calibrations, ann_
 
 
 def main():
-    writer = tf.io.TFRecordWriter('/mnt/Bulk/Waymo/waymo_validation.tfrecord')
-    dataset = tf.data.Dataset.list_files('/mnt/Bulk/Waymo/validation/*')
-    dataset = tf.data.TFRecordDataset(dataset)
-    # FILENAME = '/mnt/Bulk/Waymo/validation/segment-967082162553397800_5102_900_5122_900_with_camera_labels.tfrecord'
-    # dataset = tf.data.TFRecordDataset(FILENAME)
-    i = 1
-
     ann_json_dict = {
         'images': [],
         'type': 'instances',
@@ -168,31 +167,40 @@ def main():
         cls = {'supercategory': 'none', 'id': class_id, 'name': class_name}
         ann_json_dict['categories'].append(cls)
 
-    for data in dataset:
-        frame = open_dataset.Frame()
-        frame.ParseFromString(bytearray(data.numpy()))
-
-        (range_images, camera_projections,
-         range_image_top_pose) = frame_utils.parse_range_image_and_camera_projection(
-            frame)
-
-        for index, image in enumerate(frame.images):
-            if image.name != open_dataset.CameraName.FRONT:
-                continue
-
-            tf_example = build_example(frame.context.name,
-                image, frame.camera_labels, frame.context.camera_calibrations, ann_json_dict=ann_json_dict)
-            writer.write(tf_example.SerializeToString())
-
-        if i % 100 == 0:
-            print("processed {} frames".format(i))
+    num_examples = 0
+    i = 0
+    for tfrecord in tf.data.Dataset.list_files(FLAGS.data_dir + '/*'):
         i += 1
+        writer = tf.python_io.TFRecordWriter(FLAGS.output_path + '-%05d.tfrecord' % (i))
 
-    writer.close()
+        dataset = tf.data.TFRecordDataset(tfrecord)
+        for data in dataset:
+            frame = open_dataset.Frame()
+            frame.ParseFromString(bytearray(data.numpy()))
 
-    with open('/mnt/Bulk/Waymo/waymo_validation.json', 'w') as f:
+            (range_images, camera_projections,
+            range_image_top_pose) = frame_utils.parse_range_image_and_camera_projection(
+                frame)
+
+            for index, image in enumerate(frame.images):
+                if image.name != open_dataset.CameraName.FRONT:
+                    continue
+
+                tf_example = build_example(frame.context.name,
+                    image, frame.camera_labels, frame.context.camera_calibrations, ann_json_dict=ann_json_dict)
+                writer.write(tf_example.SerializeToString())
+                num_examples += 1
+
+        writer.close()
+        print("processed {} tfrecords".format(i))
+
+    json_file_path = os.path.join(
+        os.path.dirname(FLAGS.output_path),
+        'json_' + os.path.basename(FLAGS.output_path) + '.json')
+    with open(json_file_path, 'w') as f:
         json.dump(ann_json_dict, f)
 
+    print("wrote {} examples in {} tfrecords".format(num_examples, i))
 
 if __name__ == '__main__':
     main()
