@@ -12,6 +12,7 @@ import numpy as np
 import itertools
 import hashlib
 import json
+import random
 
 flags = tf.app.flags
 flags.DEFINE_string('data_dir', '', 'Directory to read input tfrecords from.')
@@ -171,8 +172,8 @@ def main():
     i = 0
     for tfrecord in tf.data.Dataset.list_files(FLAGS.data_dir + '/*'):
         i += 1
-        writer = tf.python_io.TFRecordWriter(FLAGS.output_path + '-%05d.tfrecord' % (i))
 
+        examples = []
         dataset = tf.data.TFRecordDataset(tfrecord)
         for data in dataset:
             frame = open_dataset.Frame()
@@ -182,15 +183,16 @@ def main():
             range_image_top_pose) = frame_utils.parse_range_image_and_camera_projection(
                 frame)
 
-            for index, image in enumerate(frame.images):
-                if image.name != open_dataset.CameraName.FRONT:
-                    continue
-
+            for image in frame.images:
                 tf_example = build_example(frame.context.name,
                     image, frame.camera_labels, frame.context.camera_calibrations, ann_json_dict=ann_json_dict)
-                writer.write(tf_example.SerializeToString())
-                num_examples += 1
+                examples.append(tf_example.SerializeToString())
 
+        random.shuffle(examples)
+        writer = tf.python_io.TFRecordWriter(FLAGS.output_path + '-%05d.tfrecord' % (i))
+        for example in examples:
+                writer.write(example)
+                num_examples += 1
         writer.close()
         print("processed {} tfrecords".format(i))
 
