@@ -97,7 +97,7 @@ def build_example(sequence_name, camera_image, camera_labels, calibrations, ann_
             continue
 
         # Iterate over the individual labels.
-        for label in cl.labels:
+        for label in cl.labels[:100]:
             # Draw the object bounding box.
             xmin = float(label.box.center_x - 0.5 * label.box.length) / width
             ymin = float(label.box.center_y - 0.5 * label.box.width) / height
