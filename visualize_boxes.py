@@ -15,7 +15,7 @@ from waymo_open_dataset import label_pb2 as open_label
 import matplotlib.pyplot as plt
 import matplotlib.patches as patches
 
-FILENAME = '/mnt/Bulk/Waymo/segment-1005081002024129653_5313_150_5333_150_with_camera_labels.tfrecord'
+FILENAME = '/mnt/Bulk/Waymo/training/segment-15942468615931009553_1243_190_1263_190_with_camera_labels.tfrecord'
 dataset = tf.data.TFRecordDataset(FILENAME, compression_type='')
 for data in dataset:
     frame = open_dataset.Frame()
@@ -63,9 +63,10 @@ def show_camera_image(camera_image, camera_labels, layout, cmap=None):
   plt.title(open_dataset.CameraName.Name.Name(camera_image.name))
   plt.grid(False)
   plt.axis('off')
-  plt.show()
 
-plt.figure(figsize=(25, 20))
+plt.figure(figsize=(50, 40))
 
 for index, image in enumerate(frame.images):
   show_camera_image(image, frame.camera_labels, [3, 3, index+1])
+
+plt.show()
