@@ -64,6 +64,9 @@ def show_camera_image(camera_image, camera_labels, layout, cmap=None):
   plt.grid(False)
   plt.axis('off')
 
+  with open(open_dataset.CameraName.Name.Name(camera_image.name) + ".jpg", "wb") as f:
+    f.write(camera_image.image)
+
 plt.figure(figsize=(50, 40))
 
 for index, image in enumerate(frame.images):
