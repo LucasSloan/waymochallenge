@@ -1,0 +1,6 @@
+PYTHONPATH="$PYTHONPATH:$HOME/Development/tpu/models" python main.py \
+  --model="retinanet" \
+  --model_dir=/tmp/spinenet-scratch \
+  --mode=train_and_eval \
+  --use_tpu=False \
+  --params_override="{ train: { checkpoint: { path: 'gs://cloud-tpu-artifacts/resnet/resnet-nhwc-2018-10-14/model.ckpt-112602' }, train_file_pattern: /mnt/Bulk/Waymo/efficientdet/train*.tfrecord }, eval: { val_json_file: /mnt/Bulk/Waymo/waymo_validation.json, eval_file_pattern: /mnt/Bulk/Waymo/waymo_validation.tfrecord } }"
