@@ -2,3 +2,8 @@ python model_inspect.py --runmode=infer --model_name=efficientdet-d0 \
   --input_image_size=1920x1280 --max_boxes_to_draw=100   --min_score_thresh=0.2 \
   --ckpt_path=/tmp/efficientdet-d0-scratch --input_image="$HOME/Development/waymochallenge/FRONT.jpg" \
   --output_image_dir=/tmp --enable_ema=False --num_classes=5
+
+python model_inspect.py --runmode=infer --model_name=efficientdet-d0 \
+  --input_image_size=1920x1280 --max_boxes_to_draw=100   --min_score_thresh=0.2 \
+  --ckpt_path=efficientdet-d0 --input_image="$HOME/Development/waymochallenge/FRONT.jpg" \
+  --output_image_dir=/tmp --enable_ema=False
