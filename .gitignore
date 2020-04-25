@@ -1,3 +1,5 @@
 .vscode/
 best_checkpoint/
 inference_test/
+detection_retinanet_spinenet-49S-best/
+detection_retinanet_spinenet-49S-best.tar
