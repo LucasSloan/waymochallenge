@@ -27,6 +27,6 @@ docker run -e NCCL_DEBUG=WARN -e TF_XLA_FLAGS=--tf_xla_auto_jit=2 \
     --ckpt=/efficientdet/efficientdet-d0 \
     --train_batch_size=16 \
     --eval_batch_size=16 --eval_samples=4096 \
-    --num_examples_per_epoch=790405 --num_epochs=10 \
-    --hparams="use_bfloat16=false,num_classes=5,moving_average_decay=0,var_exclude_expr=r'.*/class-predict/.*'" \
+    --num_examples_per_epoch=462888 --num_epochs=10 \
+    --hparams="use_bfloat16=false,num_classes=5,moving_average_decay=0,var_exclude_expr=r'.*/class-predict/.*',learning_rate=0.01,lr_warmup_init=0.001" \
     --use_tpu=False
