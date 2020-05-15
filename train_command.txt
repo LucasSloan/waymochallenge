@@ -12,21 +12,42 @@ python main.py --mode=train_and_eval \
     --hparams="use_bfloat16=false,num_classes=5,moving_average_decay=0,var_exclude_expr=r'.*/class-predict/.*'" \
     --use_tpu=False
 
+docker run \
+    -e TF_DUMP_GRAPH_PREFIX=/tmp/generated/2dot0 \
+    -e TF_XLA_FLAGS="--tf_xla_clustering_debug --tf_xla_auto_jit=2" \
+    -e XLA_FLAGS="--xla_dump_hlo_as_text --xla_dump_to=/tmp/generated/2dot0" \
+    --mount type=bind,source=/home/lucas/Development/automl/efficientdet,target=/efficientdet \
+    --mount type=bind,source=/mnt/Bulk,target=/mnt/Bulk \
+    --mount type=bind,source=/tmp,target=/tmp \
+    --gpus 'all' -it --rm me/mytensorflow \
+    python /efficientdet/main.py --mode=train \
+    --training_file_pattern=/mnt/Bulk/Waymo/efficientdet_train/train*.tfrecord \
+    --validation_file_pattern=/mnt/Bulk/Waymo/waymo_valid/valid*.tfrecord \
+    --val_json_file=/mnt/Bulk/Waymo/waymo_valid/valid.json \
+    --model_name=efficientdet-d0 \
+    --model_dir=/tmp/efficientdet-d0-scratch \
+    --ckpt=/efficientdet/efficientdet-d0 \
+    --train_batch_size=8 \
+    --eval_batch_size=64 --eval_samples=4096 \
+    --num_examples_per_epoch=2048 --num_epochs=1 \
+    --hparams="num_classes=5,moving_average_decay=0,var_exclude_expr=r'.*/class-predict/.*',learning_rate=0.01,lr_warmup_init=0.001" \
+    --use_tpu=False
+
+
 docker run -e NCCL_DEBUG=WARN -e TF_XLA_FLAGS=--tf_xla_auto_jit=2 \
     --mount type=bind,source=/home/lucas/Development/automl/efficientdet,target=/efficientdet \
     --mount type=bind,source=/mnt/Bulk,target=/mnt/Bulk \
     --mount type=bind,source=/tmp,target=/tmp \
     --gpus 'all' -it --rm me/mytensorflow \
     python /efficientdet/main.py --mode=train_and_eval \
-    --num_classes=5 \
-    --training_file_pattern=/mnt/Bulk/Waymo/efficientdet/train*.tfrecord \
-    --validation_file_pattern=/mnt/Bulk/Waymo/waymo_validation.tfrecord \
-    --val_json_file=/mnt/Bulk/Waymo/waymo_validation.json \
-    --model_name=efficientdet-d0 \
-    --model_dir=/tmp/efficientdet-d0-scratch \
-    --ckpt=/efficientdet/efficientdet-d0 \
+    --training_file_pattern=/mnt/Bulk/Waymo/efficientdet_train/train*.tfrecord \
+    --validation_file_pattern=/mnt/Bulk/Waymo/waymo_valid/valid*.tfrecord \
+    --val_json_file=/mnt/Bulk/Waymo/waymo_valid/valid.json \
+    --model_name=efficientdet-d1 \
+    --model_dir=/tmp/efficientdet-d1-scratch \
+    --ckpt=/efficientdet/efficientdet-d1 \
     --train_batch_size=16 \
-    --eval_batch_size=16 --eval_samples=4096 \
-    --num_examples_per_epoch=462888 --num_epochs=10 \
+    --eval_batch_size=64 --eval_samples=4096 \
+    --num_examples_per_epoch=869385 --num_epochs=10 \
     --hparams="use_bfloat16=false,num_classes=5,moving_average_decay=0,var_exclude_expr=r'.*/class-predict/.*',learning_rate=0.01,lr_warmup_init=0.001" \
     --use_tpu=False
