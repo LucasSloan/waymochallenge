@@ -13,6 +13,7 @@ import itertools
 import hashlib
 import json
 import random
+import time
 
 flags = tf.app.flags
 flags.DEFINE_string('data_dir', '', 'Directory to read input tfrecords from.')
@@ -22,6 +23,14 @@ FLAGS = flags.FLAGS
 
 tf.enable_eager_execution()
 
+
+label_type_map = {
+    open_label.Label.TYPE_UNKNOWN: 'unknown',
+    open_label.Label.TYPE_VEHICLE: 'vehicle',
+    open_label.Label.TYPE_PEDESTRIAN: 'pedestrian',
+    open_label.Label.TYPE_SIGN: 'sign',
+    open_label.Label.TYPE_CYCLIST: 'cyclist',
+}
 
 camera_name_map = {
     open_dataset.CameraName.UNKNOWN: 'unknown',
@@ -33,7 +42,7 @@ camera_name_map = {
 }
 
 
-def build_example(sequence_name, camera_image, camera_labels, calibrations):
+def extract_single_image(sequence_name, camera_image, camera_labels, calibrations):
     for calibration in calibrations:
         if calibration.name != camera_image.name:
             continue
@@ -42,7 +51,7 @@ def build_example(sequence_name, camera_image, camera_labels, calibrations):
         height = calibration.height
 
     filename = "{}_{}_{}".format(sequence_name, camera_name_map[camera_image.name], camera_image.pose_timestamp)
-    with open(FLAGS.output_path + filename + ".txt", "w") as f:
+    with open(FLAGS.output_path + "/" + filename + ".txt", "w") as f:
         for cl in camera_labels:
             # Ignore camera labels that do not correspond to this camera.
             if cl.name != camera_image.name:
@@ -55,35 +64,35 @@ def build_example(sequence_name, camera_image, camera_labels, calibrations):
                 xcenter = label.box.center_x / width
                 ycenter = label.box.center_y / height
 
-                width = label.box.length / width
-                height = label.box.width / height
+                label_width = label.box.length / width
+                label_height = label.box.width / height
 
-                f.write("{} {} {} {} {}\n".format(class_label, xcenter, ycenter, width, height))
+                f.write("{} {} {} {} {}\n".format(class_label, xcenter, ycenter, label_width, label_height))
 
-    with open(FLAGS.output_path + filename + ".jpg", "wb") as f:
+    with open(FLAGS.output_path + "/" + filename + ".jpg", "wb") as f:
         f.write(camera_image.image)
 
+def extract_tfrecord(tfrecord):
+    dataset = tf.data.TFRecordDataset(tfrecord)
+    for data in dataset:
+        frame = open_dataset.Frame()
+        frame.ParseFromString(bytearray(data.numpy()))
+
+        (range_images, camera_projections,
+        range_image_top_pose) = frame_utils.parse_range_image_and_camera_projection(
+            frame)
+
+        for image in frame.images:
+            extract_single_image(frame.context.name,
+                image, frame.camera_labels, frame.context.camera_calibrations)
 
 
 def main():
-    i = 0
-    for tfrecord in tf.data.Dataset.list_files(FLAGS.data_dir + '/*.tfrecord'):
-        i += 1
-
-        dataset = tf.data.TFRecordDataset(tfrecord)
-        for data in dataset:
-            frame = open_dataset.Frame()
-            frame.ParseFromString(bytearray(data.numpy()))
-
-            (range_images, camera_projections,
-            range_image_top_pose) = frame_utils.parse_range_image_and_camera_projection(
-                frame)
-
-            for image in frame.images:
-                if image.name != open_dataset.CameraName.FRONT:
-                    continue
-                build_example(frame.context.name,
-                    image, frame.camera_labels, frame.context.camera_calibrations)
+    start = time.time()
+    for i, tfrecord in enumerate(os.listdir(FLAGS.data_dir)):
+        extract_tfrecord(FLAGS.data_dir + "/" + tfrecord)
+        print("extracted {} tfrecords in {}".format(i, time.time() - start))
+        start = time.time()
 
 if __name__ == '__main__':
     main()
