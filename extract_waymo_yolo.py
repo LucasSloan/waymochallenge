@@ -42,7 +42,7 @@ camera_name_map = {
 }
 
 
-def extract_single_image(sequence_name, camera_image, camera_labels, calibrations):
+def extract_single_image(sequence_name, camera_image, camera_labels, calibrations, timestamp):
     for calibration in calibrations:
         if calibration.name != camera_image.name:
             continue
@@ -50,7 +50,7 @@ def extract_single_image(sequence_name, camera_image, camera_labels, calibration
         width = calibration.width
         height = calibration.height
 
-    filename = "{}_{}_{}".format(sequence_name, camera_name_map[camera_image.name], camera_image.pose_timestamp)
+    filename = "{}_{}_{}".format(sequence_name, camera_name_map[camera_image.name], timestamp)
     with open(FLAGS.output_path + "/" + filename + ".txt", "w") as f:
         for cl in camera_labels:
             # Ignore camera labels that do not correspond to this camera.
@@ -84,7 +84,7 @@ def extract_tfrecord(tfrecord):
 
         for image in frame.images:
             extract_single_image(frame.context.name,
-                image, frame.camera_labels, frame.context.camera_calibrations)
+                image, frame.camera_labels, frame.context.camera_calibrations, frame.timestamp_micros)
 
 
 def main():
